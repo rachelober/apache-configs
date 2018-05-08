@@ -1,0 +1,127 @@
+ErrorDocument 401 default
+ErrorDocument 403 default
+
+# disable directory browsing
+Options -Indexes
+
+# disable the server signature
+ServerSignature Off
+
+# limit file uploads to 10mb
+LimitRequestBody 10240000
+
+# BEGIN protect .htaccess
+<Files ~ "^.*\.([Hh][Tt][Aa])">
+Order Allow,Deny
+Deny from all
+Satisfy all
+</files>
+# END protect .htaccess
+
+# BEGIN block IP addresses to login page
+RewriteEngine on
+RewriteCond %{REQUEST_URI} ^(.*)?wp-login\.php(.*)$ [OR]
+RewriteCond %{REQUEST_URI} ^(.*)?wp-admin$
+RewriteCond %{REMOTE_ADDR} !^xxx\.xxx\.xxx\.xxx$
+RewriteCond %{REMOTE_ADDR} !^xxx\.xxx\.xxx\.xxx$
+RewriteRule ^(.*)$ - [R=403,L]
+# END block IP addresses to login page
+
+# BEGIN protect wp-config.php
+<Files wp-config.php>
+Order Allow,Deny
+Deny from all
+</files>
+# BEGIN protect wp-config.php
+
+# BEGIN enforce HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# END enforce HTTPS
+
+# BEGIN block the include-only files
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^wp-admin/includes/ - [F,L]
+RewriteRule !^wp-includes/ - [S=3]
+RewriteRule ^wp-includes/[^/]+\.php$ - [F,L]
+RewriteRule ^wp-includes/js/tinymce/langs/.+\.php - [F,L]
+RewriteRule ^wp-includes/theme-compat/ - [F,L]
+</IfModule>
+# END block the include-only files
+
+# BEGIN access stats
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteCond %{REQUEST_URI} ^/(stats|failed_auth\.html).*$ [NC]
+RewriteRule . - [L]
+</IfModule>
+# END access stats
+
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+# END WordPress
+
+# BEGIN Sucuri Suggestions
+# https://kb.sucuri.net/warnings/hardening/headers-x-xss-protection
+<IfModule mod_headers.c>
+Header set X-XSS-Protection "1; mode=block"
+Header always append X-Frame-Options SAMEORIGIN
+Header set X-Content-Type-Options nosniff
+</IfModule>
+# END Sucuri Suggestions
+
+# BEGIN supercache
+<IfModule mod_mime.c>
+  <FilesMatch "\.html\.gz$">
+    ForceType text/html
+    FileETag None
+  </FilesMatch>
+  AddEncoding gzip .gz
+  AddType text/html .gz
+</IfModule>
+<IfModule mod_deflate.c>
+  SetEnvIfNoCase Request_URI \.gz$ no-gzip
+</IfModule>
+<IfModule mod_headers.c>
+  Header set Vary "Accept-Encoding, Cookie"
+  Header set Cache-Control 'max-age=3, must-revalidate'
+</IfModule>
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/html A3
+</IfModule>
+# END supercache
+
+# BEGIN browser caching
+<IfModule mod_expires.c>
+ExpiresActive On
+ExpiresByType image/jpg "access 1 year"
+ExpiresByType image/jpeg "access 1 year"
+ExpiresByType image/gif "access 1 year"
+ExpiresByType image/png "access 1 year"
+ExpiresByType text/css "access 1 month"
+ExpiresByType application/pdf "access 1 month"
+ExpiresByType text/x-javascript "access 1 month"
+ExpiresByType application/x-shockwave-flash "access 1 month"
+ExpiresByType image/x-icon "access 1 year"
+ExpiresDefault "access 2 days"
+</IfModule>
+# END browser caching
+
+# BEGIN disable hotlinking
+RewriteEngine on
+RewriteCond %{HTTP_REFERER} !^$
+RewriteCond %{HTTP_REFERER} https://%{HTTP_HOST} [NC]
+RewriteRule \.(jpg|jpeg|png|gif)$ http://i.imgur.com/g7ptdBB.png [NC,R,L]
+# END disable hotlinking
